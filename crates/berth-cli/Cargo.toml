@@ -18,8 +18,8 @@ path = "src/main.rs"
 [dependencies]
 aes-gcm = "0.10"
 base64 = "0.22"
-berth-registry = { version = "0.1.0", path = "../berth-registry" }
-berth-runtime = { version = "0.1.0", path = "../berth-runtime" }
+berth-registry = { version = "0.1.1", path = "../berth-registry" }
+berth-runtime = { version = "0.1.1", path = "../berth-runtime" }
 clap = { version = "4", features = ["derive"] }
 colored = "3"
 dirs = "6"
