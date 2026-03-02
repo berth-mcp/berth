@@ -7,6 +7,14 @@
   Berth — The Safe Runtime & Package Manager for MCP Servers
 </h1>
 
+<p align="center">
+  <a href="https://github.com/berth-mcp/berth/actions/workflows/ci.yml"><img src="https://github.com/berth-mcp/berth/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/berth-mcp/berth/actions/workflows/docs.yml"><img src="https://github.com/berth-mcp/berth/actions/workflows/docs.yml/badge.svg" alt="Docs"></a>
+  <a href="https://crates.io/crates/berth"><img src="https://img.shields.io/crates/v/berth.svg" alt="crates.io"></a>
+  <a href="https://www.npmjs.com/package/@berth/cli"><img src="https://img.shields.io/npm/v/@berth/cli.svg" alt="npm"></a>
+  <a href="https://github.com/berth-mcp/berth/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License"></a>
+</p>
+
 > A safe berth for your AI tools.
 
 Berth is an open-source CLI tool for managing [MCP (Model Context Protocol)](https://modelcontextprotocol.io) servers. It lets you discover, install, configure, run, and secure MCP servers from a single interface — replacing manual JSON config editing with a clean developer experience and adding a security/permission layer on top.
@@ -304,6 +312,10 @@ berth/
     berth-registry/              # MCP server registry client, types, search engine
     berth-runtime/               # MCP server runtime state management with tokio-backed supervision
 ```
+
+## Documentation
+
+Full documentation: [berth-mcp.github.io/berth](https://berth-mcp.github.io/berth/)
 
 ## Related
 
