@@ -236,6 +236,7 @@ fn build_process_spec(
             args,
             env,
             auto_restart: Some(policy),
+            ..Default::default()
         },
         undeclared_network,
     ))

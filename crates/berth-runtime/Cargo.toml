@@ -6,6 +6,7 @@ license.workspace = true
 description = "Berth process management runtime"
 
 [dependencies]
+libc = "0.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 toml = "0.8"

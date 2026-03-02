@@ -21,6 +21,7 @@ use crate::policy_engine::{
     enforce_global_policy, load_global_policy, GlobalPolicy, POLICY_DENIED_PREFIX,
 };
 use crate::proxy_filter::ProxyFilter;
+use crate::resource_limits::{apply_resource_limits, parse_resource_limits};
 use crate::sandbox_policy::{parse_sandbox_policy, KEY_SANDBOX_NETWORK};
 use crate::sandbox_runtime::apply_sandbox_runtime;
 use crate::secrets::resolve_config_value;
@@ -146,14 +147,23 @@ pub fn execute(server: &str) {
         Stdio::inherit()
     };
 
-    let mut child = match Command::new(&spec.command)
-        .args(&spec.args)
+    let resource_limits = match parse_resource_limits(&installed.config) {
+        Ok(l) => l,
+        Err(msg) => {
+            eprintln!("{} {}", "✗".red().bold(), msg);
+            process::exit(1);
+        }
+    };
+
+    let mut cmd = Command::new(&spec.command);
+    cmd.args(&spec.args)
         .envs(&spec.env)
         .stdin(stdin_mode)
         .stdout(stdout_mode)
-        .stderr(Stdio::inherit())
-        .spawn()
-    {
+        .stderr(Stdio::inherit());
+    apply_resource_limits(&mut cmd, &resource_limits);
+
+    let mut child = match cmd.spawn() {
         Ok(c) => c,
         Err(e) => {
             eprintln!("{} Failed to start proxy process: {}", "✗".red().bold(), e);
@@ -311,6 +321,7 @@ fn build_process_spec(
         ));
     }
     filter_env_map(&mut env, &installed.permissions.env, &overrides);
+    let resource_limits = parse_resource_limits(&installed.config)?;
     let (command, args) = apply_sandbox_runtime(
         &installed.runtime.command,
         &installed.runtime.args,
@@ -325,6 +336,8 @@ fn build_process_spec(
             args,
             env,
             auto_restart: None,
+            max_memory_bytes: resource_limits.max_memory_bytes,
+            max_file_descriptors: resource_limits.max_file_descriptors,
         },
         undeclared_network,
     ))

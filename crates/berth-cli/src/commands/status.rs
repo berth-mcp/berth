@@ -324,6 +324,8 @@ fn build_process_spec(
         args,
         env,
         auto_restart: Some(policy),
+        max_memory_bytes: None,
+        max_file_descriptors: None,
     })
 }
 

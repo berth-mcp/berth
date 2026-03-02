@@ -15,6 +15,10 @@ use berth_registry::config::InstalledServer;
 use berth_registry::Registry;
 
 use crate::paths;
+use crate::resource_limits::{
+    is_resource_limit_key, parse_resource_limits, validate_resource_limit_value,
+    KEY_MAX_FILE_DESCRIPTORS, KEY_MAX_MEMORY,
+};
 use crate::runtime_policy::{
     is_runtime_policy_key, parse_runtime_policy, validate_runtime_policy_value, KEY_AUTO_RESTART,
     KEY_MAX_RESTARTS,
@@ -393,6 +397,23 @@ fn show_config(server: &str, config_path: &std::path::Path) {
         );
     }
 
+    if let Ok(limits) = parse_resource_limits(&installed.config) {
+        if limits.max_memory_bytes.is_some() || limits.max_file_descriptors.is_some() {
+            println!();
+            println!("  {}", "Resource limits:".bold());
+            if let Some(mem) = limits.max_memory_bytes {
+                println!("    {:<24} [{}]", KEY_MAX_MEMORY, format_bytes(mem).green());
+            }
+            if let Some(fds) = limits.max_file_descriptors {
+                println!(
+                    "    {:<24} [{}]",
+                    KEY_MAX_FILE_DESCRIPTORS,
+                    fds.to_string().green()
+                );
+            }
+        }
+    }
+
     println!();
 }
 
@@ -435,8 +456,9 @@ fn set_config(server: &str, kv: &str, secure: bool, config_path: &Path) {
             .config_meta
             .optional_keys
             .contains(&key.to_string())
-        || is_runtime_policy_key(key);
-    let is_known = is_known || is_sandbox_policy_key(key);
+        || is_runtime_policy_key(key)
+        || is_sandbox_policy_key(key)
+        || is_resource_limit_key(key);
 
     if !is_known {
         eprintln!("{} Unknown config key: {}", "✗".red().bold(), key.cyan());
@@ -451,6 +473,8 @@ fn set_config(server: &str, kv: &str, secure: bool, config_path: &Path) {
         all_keys.push(KEY_MAX_RESTARTS);
         all_keys.push(KEY_SANDBOX);
         all_keys.push(KEY_SANDBOX_NETWORK);
+        all_keys.push(KEY_MAX_MEMORY);
+        all_keys.push(KEY_MAX_FILE_DESCRIPTORS);
         all_keys.sort_unstable();
         eprintln!("  Known keys: {}", all_keys.join(", "));
         process::exit(1);
@@ -464,6 +488,12 @@ fn set_config(server: &str, kv: &str, secure: bool, config_path: &Path) {
     }
     if is_sandbox_policy_key(key) {
         if let Err(msg) = validate_sandbox_policy_value(key, value) {
+            eprintln!("{} {}", "✗".red().bold(), msg);
+            process::exit(1);
+        }
+    }
+    if is_resource_limit_key(key) {
+        if let Err(msg) = validate_resource_limit_value(key, value) {
             eprintln!("{} {}", "✗".red().bold(), msg);
             process::exit(1);
         }
@@ -783,6 +813,19 @@ fn installed_server_entries() -> Result<Vec<(String, PathBuf)>, String> {
         return Err("No servers installed. Run `berth install <server>` first.".to_string());
     }
     Ok(entries)
+}
+
+/// Formats a byte count for human display (e.g. `256 MiB`).
+fn format_bytes(bytes: u64) -> String {
+    if bytes >= 1024 * 1024 * 1024 && bytes.is_multiple_of(1024 * 1024 * 1024) {
+        format!("{} GiB", bytes / (1024 * 1024 * 1024))
+    } else if bytes >= 1024 * 1024 && bytes.is_multiple_of(1024 * 1024) {
+        format!("{} MiB", bytes / (1024 * 1024))
+    } else if bytes >= 1024 && bytes.is_multiple_of(1024) {
+        format!("{} KiB", bytes / 1024)
+    } else {
+        format!("{bytes} B")
+    }
 }
 
 /// Reads and parses an installed server config file.

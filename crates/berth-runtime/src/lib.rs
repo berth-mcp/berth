@@ -56,6 +56,10 @@ pub struct ProcessSpec {
     pub args: Vec<String>,
     pub env: BTreeMap<String, String>,
     pub auto_restart: Option<AutoRestartPolicy>,
+    #[serde(default)]
+    pub max_memory_bytes: Option<u64>,
+    #[serde(default)]
+    pub max_file_descriptors: Option<u64>,
 }
 
 /// Auto-restart policy applied to supervised server processes.
@@ -213,16 +217,20 @@ impl RuntimeManager {
                         return Ok(ServerStatus::Stopped);
                     }
 
-                    let child = Command::new(&spec.command)
-                        .args(&spec.args)
+                    let mut cmd = Command::new(&spec.command);
+                    cmd.args(&spec.args)
                         .envs(&spec.env)
                         .stdin(Stdio::null())
                         .stdout(Stdio::from(self.open_log_append(server)?))
-                        .stderr(Stdio::from(self.open_log_append(server)?))
-                        .spawn()
-                        .map_err(|e| {
-                            io::Error::new(e.kind(), format!("failed to spawn process: {e}"))
-                        })?;
+                        .stderr(Stdio::from(self.open_log_append(server)?));
+                    apply_resource_limits(
+                        &mut cmd,
+                        spec.max_memory_bytes,
+                        spec.max_file_descriptors,
+                    );
+                    let child = cmd.spawn().map_err(|e| {
+                        io::Error::new(e.kind(), format!("failed to spawn process: {e}"))
+                    })?;
                     let pid = child.id();
                     drop(child);
 
@@ -307,12 +315,14 @@ impl RuntimeManager {
         let log_file = self.open_log_append(server)?;
         let err_file = log_file.try_clone()?;
 
-        let child = Command::new(&spec.command)
-            .args(&spec.args)
+        let mut cmd = Command::new(&spec.command);
+        cmd.args(&spec.args)
             .envs(&spec.env)
             .stdin(Stdio::null())
             .stdout(Stdio::from(log_file))
-            .stderr(Stdio::from(err_file))
+            .stderr(Stdio::from(err_file));
+        apply_resource_limits(&mut cmd, spec.max_memory_bytes, spec.max_file_descriptors);
+        let child = cmd
             .spawn()
             .map_err(|e| io::Error::new(e.kind(), format!("failed to spawn process: {e}")))?;
         let pid = child.id();
@@ -541,12 +551,14 @@ impl RuntimeManager {
 
             let log_file = self.open_log_append(server)?;
             let err_file = log_file.try_clone()?;
-            let child = Command::new(&spec.command)
-                .args(&spec.args)
+            let mut cmd = Command::new(&spec.command);
+            cmd.args(&spec.args)
                 .envs(&spec.env)
                 .stdin(Stdio::null())
                 .stdout(Stdio::from(log_file))
-                .stderr(Stdio::from(err_file))
+                .stderr(Stdio::from(err_file));
+            apply_resource_limits(&mut cmd, spec.max_memory_bytes, spec.max_file_descriptors);
+            let child = cmd
                 .spawn()
                 .map_err(|e| io::Error::new(e.kind(), format!("failed to spawn process: {e}")))?;
             let pid = child.id();
@@ -746,6 +758,53 @@ fn now_epoch_secs() -> u64 {
         .as_secs()
 }
 
+/// Applies resource limits (memory + file descriptors) to a command via `pre_exec`.
+#[cfg(unix)]
+fn apply_resource_limits(
+    cmd: &mut Command,
+    max_memory_bytes: Option<u64>,
+    max_file_descriptors: Option<u64>,
+) {
+    use std::os::unix::process::CommandExt;
+
+    if max_memory_bytes.is_none() && max_file_descriptors.is_none() {
+        return;
+    }
+
+    unsafe {
+        cmd.pre_exec(move || {
+            if let Some(bytes) = max_memory_bytes {
+                let rlim = libc::rlimit {
+                    rlim_cur: bytes,
+                    rlim_max: bytes,
+                };
+                if libc::setrlimit(libc::RLIMIT_AS, &rlim) != 0 {
+                    return Err(io::Error::last_os_error());
+                }
+            }
+            if let Some(n) = max_file_descriptors {
+                let rlim = libc::rlimit {
+                    rlim_cur: n,
+                    rlim_max: n,
+                };
+                if libc::setrlimit(libc::RLIMIT_NOFILE, &rlim) != 0 {
+                    return Err(io::Error::last_os_error());
+                }
+            }
+            Ok(())
+        });
+    }
+}
+
+/// No-op on non-Unix platforms.
+#[cfg(not(unix))]
+fn apply_resource_limits(
+    _cmd: &mut Command,
+    _max_memory_bytes: Option<u64>,
+    _max_file_descriptors: Option<u64>,
+) {
+}
+
 /// Returns whether a process is currently alive.
 #[cfg(unix)]
 fn process_is_alive(pid: u32) -> bool {
@@ -912,6 +971,7 @@ mod tests {
             args: vec!["-c".to_string(), "sleep 60".to_string()],
             env: BTreeMap::new(),
             auto_restart: None,
+            ..Default::default()
         }
     }
 
@@ -928,6 +988,7 @@ mod tests {
             ],
             env: BTreeMap::new(),
             auto_restart: None,
+            ..Default::default()
         }
     }
 
@@ -938,6 +999,7 @@ mod tests {
             args: vec![],
             env: BTreeMap::new(),
             auto_restart: None,
+            ..Default::default()
         }
     }
 
@@ -951,6 +1013,7 @@ mod tests {
             ],
             env: BTreeMap::new(),
             auto_restart: None,
+            ..Default::default()
         }
     }
 
@@ -964,6 +1027,7 @@ mod tests {
                 enabled: true,
                 max_restarts,
             }),
+            ..Default::default()
         }
     }
 
@@ -977,6 +1041,7 @@ mod tests {
                 enabled: true,
                 max_restarts,
             }),
+            ..Default::default()
         }
     }
 
@@ -990,6 +1055,7 @@ mod tests {
                 enabled: true,
                 max_restarts,
             }),
+            ..Default::default()
         }
     }
 
@@ -1008,6 +1074,7 @@ mod tests {
                 enabled: true,
                 max_restarts,
             }),
+            ..Default::default()
         }
     }
 
@@ -1026,6 +1093,7 @@ mod tests {
                 enabled: true,
                 max_restarts,
             }),
+            ..Default::default()
         }
     }
 
@@ -1039,6 +1107,7 @@ mod tests {
                 enabled: true,
                 max_restarts,
             }),
+            ..Default::default()
         }
     }
 

@@ -23,6 +23,7 @@ use crate::permission_filter::{
 use crate::policy_engine::{
     enforce_global_policy, load_global_policy, GlobalPolicy, POLICY_DENIED_PREFIX,
 };
+use crate::resource_limits::parse_resource_limits;
 use crate::runtime_policy::{self, parse_runtime_policy};
 use crate::sandbox_policy::{parse_sandbox_policy, KEY_SANDBOX_NETWORK};
 use crate::sandbox_runtime::apply_sandbox_runtime;
@@ -348,6 +349,7 @@ fn build_process_spec(
             policy.enabled = true;
         }
     }
+    let resource_limits = parse_resource_limits(&installed.config)?;
     let (command, args) = apply_sandbox_runtime(
         &installed.runtime.command,
         &installed.runtime.args,
@@ -362,6 +364,8 @@ fn build_process_spec(
             args,
             env,
             auto_restart: Some(policy),
+            max_memory_bytes: resource_limits.max_memory_bytes,
+            max_file_descriptors: resource_limits.max_file_descriptors,
         },
         undeclared_network,
     ))
