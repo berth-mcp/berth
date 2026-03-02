@@ -3,3 +3,6 @@ BERTH.md
 PREREQUISITES.md
 .claude
 docs/book
+npm/bin/berth
+npm/bin/berth.exe
+npm/node_modules
