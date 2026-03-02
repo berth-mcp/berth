@@ -4,9 +4,6 @@
 //! Runtime helpers that adapt process launch for sandbox policies.
 
 use std::collections::BTreeMap;
-use std::env;
-use std::path::Path;
-use std::path::PathBuf;
 
 use crate::sandbox_policy::SandboxPolicy;
 
@@ -14,6 +11,7 @@ use crate::sandbox_policy::SandboxPolicy;
 enum HostPlatform {
     Linux,
     MacOs,
+    Windows,
     Other,
 }
 
@@ -29,9 +27,9 @@ impl RuntimeProbes {
     fn detect() -> Self {
         Self {
             platform: host_platform(),
-            has_setpriv: path_has_binary("setpriv"),
-            has_sandbox_exec: path_has_binary("sandbox-exec"),
-            has_landlock_restrict: path_has_binary("landlock-restrict"),
+            has_setpriv: which::which("setpriv").is_ok(),
+            has_sandbox_exec: which::which("sandbox-exec").is_ok(),
+            has_landlock_restrict: which::which("landlock-restrict").is_ok(),
         }
     }
 }
@@ -140,6 +138,13 @@ fn apply_sandbox_runtime_with_probes(
             wrapped.extend(args.iter().cloned());
             ("sandbox-exec".to_string(), wrapped)
         }
+        HostPlatform::Windows => {
+            env_map.insert(
+                "BERTH_SANDBOX_BACKEND".to_string(),
+                "windows-job-object".to_string(),
+            );
+            (command.to_string(), args.to_vec())
+        }
         _ => {
             env_map.insert("BERTH_SANDBOX_BACKEND".to_string(), "none".to_string());
             (command.to_string(), args.to_vec())
@@ -152,28 +157,10 @@ fn host_platform() -> HostPlatform {
         HostPlatform::Linux
     } else if cfg!(target_os = "macos") {
         HostPlatform::MacOs
+    } else if cfg!(target_os = "windows") {
+        HostPlatform::Windows
     } else {
         HostPlatform::Other
-    }
-}
-
-fn path_has_binary(name: &str) -> bool {
-    let path = match env::var_os("PATH") {
-        Some(p) => p,
-        None => return false,
-    };
-
-    env::split_paths(&path).any(|dir| candidate_paths(&dir, name).iter().any(|p| p.is_file()))
-}
-
-fn candidate_paths(dir: &Path, name: &str) -> Vec<PathBuf> {
-    #[cfg(windows)]
-    {
-        vec![dir.join(format!("{name}.exe")), dir.join(name)]
-    }
-    #[cfg(not(windows))]
-    {
-        vec![dir.join(name)]
     }
 }
 
@@ -365,6 +352,33 @@ mod tests {
         assert_eq!(
             env_map.get("BERTH_SANDBOX_BACKEND"),
             Some(&"macos-sandbox-exec".to_string())
+        );
+    }
+
+    #[test]
+    fn windows_platform_sets_job_object_backend() {
+        let mut env_map = BTreeMap::new();
+        let (cmd, args) = apply_sandbox_runtime_with_probes(
+            "node",
+            &["server.js".to_string()],
+            &mut env_map,
+            SandboxPolicy {
+                enabled: true,
+                network_deny_all: false,
+            },
+            &[],
+            RuntimeProbes {
+                platform: HostPlatform::Windows,
+                has_setpriv: false,
+                has_sandbox_exec: false,
+                has_landlock_restrict: false,
+            },
+        );
+        assert_eq!(cmd, "node");
+        assert_eq!(args, vec!["server.js".to_string()]);
+        assert_eq!(
+            env_map.get("BERTH_SANDBOX_BACKEND"),
+            Some(&"windows-job-object".to_string())
         );
     }
 
