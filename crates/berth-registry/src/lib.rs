@@ -13,7 +13,7 @@ use seed::load_seed_registry;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::time::Duration;
 use types::ServerMetadata;
 
 /// In-memory registry loaded from the embedded seed dataset.
@@ -122,29 +122,16 @@ fn write_cache(path: &Path, data: &str) -> Result<(), String> {
 }
 
 fn fetch_registry_json(url: &str) -> Result<String, String> {
-    let curl_output = Command::new("curl")
-        .args(["-fsSL", "--max-time", "5", url])
-        .output();
-    if let Ok(output) = curl_output {
-        if output.status.success() {
-            return String::from_utf8(output.stdout)
-                .map_err(|e| format!("registry response was not utf-8: {e}"));
-        }
-    }
-
-    let wget_output = Command::new("wget")
-        .args(["-q", "-O", "-", "--timeout=5", url])
-        .output();
-    if let Ok(output) = wget_output {
-        if output.status.success() {
-            return String::from_utf8(output.stdout)
-                .map_err(|e| format!("registry response was not utf-8: {e}"));
-        }
-    }
-
-    Err(format!(
-        "failed to fetch registry index from {url} (curl/wget unavailable or request failed)"
-    ))
+    let agent = ureq::AgentBuilder::new()
+        .timeout(Duration::from_secs(5))
+        .build();
+    let response = agent
+        .get(url)
+        .call()
+        .map_err(|e| format!("failed to fetch registry index from {url}: {e}"))?;
+    response
+        .into_string()
+        .map_err(|e| format!("failed to read registry response from {url}: {e}"))
 }
 
 fn default_cache_path() -> Option<PathBuf> {
