@@ -35,22 +35,22 @@ Berth fixes all of this with a single binary.
 ## Install
 
 ```bash
-# Binary install (latest GitHub release)
+# Cargo (recommended)
+cargo install berth
+
+# npm
+npm install -g @berth/cli
+
+# Shell script (latest GitHub release)
 curl -fsSL https://raw.githubusercontent.com/berth-mcp/berth/main/install.sh | sh
 
-# Optional: install from source via Homebrew (HEAD formula in this repo)
+# Homebrew (source build)
 brew install --HEAD ./Formula/berth.rb
 ```
 
 ## Quick Start
 
 ```bash
-# Build from source (requires Rust 1.75+)
-git clone https://github.com/berth-mcp/berth.git
-cd berth
-cargo build --release
-# Binary is at target/release/berth
-
 # Search the MCP server registry
 berth search github
 
