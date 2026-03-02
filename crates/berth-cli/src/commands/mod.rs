@@ -231,6 +231,10 @@ pub enum Commands {
     Link {
         /// Client name
         client: String,
+
+        /// Re-link automatically when installed servers change
+        #[arg(long)]
+        watch: bool,
     },
 
     /// Unlink Berth from an AI client
@@ -347,7 +351,7 @@ pub fn execute(command: Commands) {
             top,
             json,
         } => analytics::execute(server.as_deref(), since.as_deref(), top, json),
-        Commands::Link { client } => link::execute(&client),
+        Commands::Link { client, watch } => link::execute(&client, watch),
         Commands::Unlink { client } => unlink::execute(&client),
         Commands::Proxy { server } => proxy::execute(&server),
         Commands::Publish { manifest, dry_run } => publish::execute(manifest.as_deref(), dry_run),

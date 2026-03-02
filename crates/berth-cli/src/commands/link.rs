@@ -10,6 +10,8 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process;
+use std::thread;
+use std::time::{Duration, SystemTime};
 
 use berth_registry::config::InstalledServer;
 use berth_registry::Registry;
@@ -34,7 +36,7 @@ struct LinkableServers {
 }
 
 /// Executes the `berth link` command.
-pub fn execute(client: &str) {
+pub fn execute(client: &str, watch: bool) {
     let config_path = match paths::client_config_path(client) {
         Some(p) => p,
         None => {
@@ -52,6 +54,32 @@ pub fn execute(client: &str) {
         }
     };
     link_client(client, &config_path);
+
+    if watch {
+        let servers_dir = match paths::berth_servers_dir() {
+            Some(d) => d,
+            None => return,
+        };
+        println!("{} Watching for changes (Ctrl+C to stop)...", "•".dimmed());
+        let mut last_mtime = dir_max_mtime(&servers_dir);
+        loop {
+            thread::sleep(Duration::from_secs(2));
+            let current_mtime = dir_max_mtime(&servers_dir);
+            if current_mtime != last_mtime {
+                last_mtime = current_mtime;
+                link_client(client, &config_path);
+            }
+        }
+    }
+}
+
+/// Returns the most recent modification time of entries in a directory.
+fn dir_max_mtime(dir: &Path) -> Option<SystemTime> {
+    fs::read_dir(dir)
+        .ok()?
+        .filter_map(|e| e.ok())
+        .filter_map(|e| e.metadata().ok()?.modified().ok())
+        .max()
 }
 
 /// Links all installable Berth servers into a supported client config file.
