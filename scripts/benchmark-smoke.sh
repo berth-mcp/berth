@@ -10,7 +10,7 @@ if ! [[ "$iterations" =~ ^[0-9]+$ ]] || [[ "$iterations" -lt 3 ]]; then
 fi
 
 echo "Building release berth binary for benchmark smoke check..."
-cargo build --release --package berth-cli --bin berth >/dev/null
+cargo build --release --package berth --bin berth >/dev/null
 
 bin_path="target/release/berth"
 if [[ ! -x "$bin_path" ]]; then

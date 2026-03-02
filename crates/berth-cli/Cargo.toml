@@ -1,5 +1,5 @@
 [package]
-name = "berth-cli"
+name = "berth"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
