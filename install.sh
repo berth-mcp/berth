@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="${BERTH_REPO:-berth-dev/berth}"
+REPO="${BERTH_REPO:-bearth-mcp/berth}"
 VERSION="${BERTH_VERSION:-}"
 BIN_NAME="berth"
 

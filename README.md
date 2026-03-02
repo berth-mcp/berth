@@ -28,7 +28,7 @@ Berth fixes all of this with a single binary.
 
 ```bash
 # Binary install (latest GitHub release)
-curl -fsSL https://raw.githubusercontent.com/berth-dev/berth/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/bearth-mcp/berth/main/install.sh | sh
 
 # Optional: install from source via Homebrew (HEAD formula in this repo)
 brew install --HEAD ./Formula/berth.rb
@@ -38,7 +38,7 @@ brew install --HEAD ./Formula/berth.rb
 
 ```bash
 # Build from source (requires Rust 1.75+)
-git clone https://github.com/berth-dev/berth.git
+git clone https://github.com/bearth-mcp/berth.git
 cd berth
 cargo build --release
 # Binary is at target/release/berth
