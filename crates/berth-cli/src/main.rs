@@ -5,6 +5,7 @@
 
 mod commands;
 pub mod global_config;
+pub mod health_check;
 pub mod paths;
 pub mod permission_filter;
 pub mod policy_engine;

@@ -9,11 +9,13 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::process;
 use std::process::Command;
+use std::time::Duration;
 
 use berth_registry::config::InstalledServer;
 use berth_registry::Registry;
 use berth_runtime::{ProcessSpec, RuntimeManager, ServerStatus};
 
+use crate::health_check;
 use crate::paths;
 use crate::permission_filter::{
     filter_env_map, load_permission_overrides, validate_network_permissions,
@@ -31,7 +33,7 @@ struct RuntimeStateSnapshot {
 }
 
 /// Executes the `berth status` command.
-pub fn execute() {
+pub fn execute(health_check: bool) {
     let servers_dir = match paths::berth_servers_dir() {
         Some(d) => d,
         None => {
@@ -87,15 +89,28 @@ pub fn execute() {
     };
 
     println!("{} MCP server status:\n", "✓".green().bold());
-    println!(
-        "  {:<20} {:<12} {:<12} {:<8} {:<12}",
-        "NAME".bold(),
-        "VERSION".bold(),
-        "STATUS".bold(),
-        "PID".bold(),
-        "MEMORY".bold(),
-    );
-    println!("  {}", "─".repeat(72));
+    if health_check {
+        println!(
+            "  {:<20} {:<12} {:<12} {:<8} {:<12} {:<12}",
+            "NAME".bold(),
+            "VERSION".bold(),
+            "STATUS".bold(),
+            "PID".bold(),
+            "MEMORY".bold(),
+            "HEALTH".bold(),
+        );
+        println!("  {}", "─".repeat(84));
+    } else {
+        println!(
+            "  {:<20} {:<12} {:<12} {:<8} {:<12}",
+            "NAME".bold(),
+            "VERSION".bold(),
+            "STATUS".bold(),
+            "PID".bold(),
+            "MEMORY".bold(),
+        );
+        println!("  {}", "─".repeat(72));
+    }
 
     let mut had_error = false;
     for entry in &entries {
@@ -111,26 +126,28 @@ pub fn execute() {
                 Ok(installed) => installed,
                 Err(_) => {
                     had_error = true;
-                    println!(
-                        "  {:<20} {:<12} {:<12} {:<8} {:<12}",
-                        name.cyan(),
+                    print_row(
+                        &name,
                         "?",
-                        "error".red(),
+                        "error".red().to_string(),
                         "-",
-                        "-"
+                        "-",
+                        None,
+                        health_check,
                     );
                     continue;
                 }
             },
             Err(_) => {
                 had_error = true;
-                println!(
-                    "  {:<20} {:<12} {:<12} {:<8} {:<12}",
-                    name.cyan(),
+                print_row(
+                    &name,
                     "?",
-                    "error".red(),
+                    "error".red().to_string(),
                     "-",
-                    "-"
+                    "-",
+                    None,
+                    health_check,
                 );
                 continue;
             }
@@ -145,11 +162,13 @@ pub fn execute() {
             }
         };
 
+        let is_running;
         let (status_display, pid_display, memory_display) = match spec.as_ref().map_or_else(
             || runtime.status(&name),
             |s| runtime.status_with_spec(&name, Some(s)),
         ) {
             Ok(ServerStatus::Running) => {
+                is_running = true;
                 let pid = read_runtime_pid(&name);
                 let pid_display = pid
                     .map(|p| p.to_string())
@@ -160,30 +179,92 @@ pub fn execute() {
                     .unwrap_or_else(|| "-".to_string());
                 ("running".green().to_string(), pid_display, memory_display)
             }
-            Ok(ServerStatus::Stopped) => (
-                "stopped".dimmed().to_string(),
-                "-".to_string(),
-                "-".to_string(),
-            ),
+            Ok(ServerStatus::Stopped) => {
+                is_running = false;
+                (
+                    "stopped".dimmed().to_string(),
+                    "-".to_string(),
+                    "-".to_string(),
+                )
+            }
             Err(_) => {
+                is_running = false;
                 had_error = true;
                 ("error".red().to_string(), "-".to_string(), "-".to_string())
             }
         };
 
-        println!(
-            "  {:<20} {:<12} {:<12} {:<8} {:<12}",
-            name.cyan(),
-            version,
+        let health_display = if health_check && is_running {
+            if let Some(s) = &spec {
+                let probe = health_check::probe_mcp_health(
+                    &s.command,
+                    &s.args,
+                    &s.env,
+                    Duration::from_secs(5),
+                );
+                match probe.mcp_responsive {
+                    Some(true) => Some("ok".green().to_string()),
+                    Some(false) => {
+                        let detail = probe.error.as_deref().unwrap_or("fail");
+                        Some(detail.red().to_string())
+                    }
+                    None => Some("-".to_string()),
+                }
+            } else {
+                Some("-".to_string())
+            }
+        } else if health_check {
+            Some("-".to_string())
+        } else {
+            None
+        };
+
+        print_row(
+            &name,
+            &version,
             status_display,
-            pid_display,
-            memory_display
+            &pid_display,
+            &memory_display,
+            health_display.as_deref(),
+            health_check,
         );
     }
     println!();
 
     if had_error {
         process::exit(1);
+    }
+}
+
+/// Prints a single status table row, optionally including the HEALTH column.
+fn print_row(
+    name: &str,
+    version: &str,
+    status: String,
+    pid: &str,
+    memory: &str,
+    health: Option<&str>,
+    show_health: bool,
+) {
+    if show_health {
+        println!(
+            "  {:<20} {:<12} {:<12} {:<8} {:<12} {:<12}",
+            name.cyan(),
+            version,
+            status,
+            pid,
+            memory,
+            health.unwrap_or("-"),
+        );
+    } else {
+        println!(
+            "  {:<20} {:<12} {:<12} {:<8} {:<12}",
+            name.cyan(),
+            version,
+            status,
+            pid,
+            memory,
+        );
     }
 }
 

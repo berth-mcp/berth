@@ -131,7 +131,11 @@ pub enum Commands {
     },
 
     /// Show status of MCP servers
-    Status,
+    Status {
+        /// Run MCP protocol health check on each server
+        #[arg(long)]
+        health_check: bool,
+    },
 
     /// Stream logs from an MCP server
     Logs {
@@ -303,7 +307,7 @@ pub fn execute(command: Commands) {
         Commands::Start { server } => start::execute(server.as_deref()),
         Commands::Stop { server } => stop::execute(server.as_deref()),
         Commands::Restart { server } => restart::execute(&server),
-        Commands::Status => status::execute(),
+        Commands::Status { health_check } => status::execute(health_check),
         Commands::Logs { server, tail } => logs::execute(&server, tail),
         Commands::Permissions {
             server,

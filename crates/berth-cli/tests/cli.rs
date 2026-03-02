@@ -3695,3 +3695,19 @@ fn global_config_auto_restart_default_applies() {
         .output()
         .unwrap();
 }
+
+#[test]
+fn status_health_check_flag_adds_column() {
+    let tmp = tempfile::tempdir().unwrap();
+    berth_with_home(tmp.path())
+        .args(["install", "github"])
+        .output()
+        .unwrap();
+
+    let output = berth_with_home(tmp.path())
+        .args(["status", "--health-check"])
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("HEALTH"), "HEALTH column should appear");
+}
