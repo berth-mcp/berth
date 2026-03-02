@@ -8,14 +8,14 @@
 ## Binary Installer
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/bearth-mcp/berth/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/berth-mcp/berth/main/install.sh | sh
 ```
 
 Installer environment variables:
 
 - `BERTH_VERSION` (example: `v0.1.0`)
 - `BERTH_INSTALL_DIR` (example: `$HOME/.local/bin`)
-- `BERTH_REPO` (defaults to `bearth-mcp/berth`)
+- `BERTH_REPO` (defaults to `berth-mcp/berth`)
 
 ## Homebrew (source build)
 
@@ -26,7 +26,7 @@ brew install --HEAD ./Formula/berth.rb
 ## Build From Source
 
 ```bash
-git clone https://github.com/bearth-mcp/berth.git
+git clone https://github.com/berth-mcp/berth.git
 cd berth
 cargo build --release
 ```

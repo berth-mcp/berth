@@ -1,8 +1,8 @@
 class Berth < Formula
   desc "Safe runtime and package manager for MCP servers"
-  homepage "https://github.com/bearth-mcp/berth"
+  homepage "https://github.com/berth-mcp/berth"
   license "Apache-2.0"
-  head "https://github.com/bearth-mcp/berth.git", branch: "main"
+  head "https://github.com/berth-mcp/berth.git", branch: "main"
 
   depends_on "rust" => :build
 
