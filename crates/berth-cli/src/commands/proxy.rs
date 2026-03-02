@@ -20,6 +20,7 @@ use crate::permission_filter::{
 use crate::policy_engine::{
     enforce_global_policy, load_global_policy, GlobalPolicy, POLICY_DENIED_PREFIX,
 };
+use crate::proxy_filter::ProxyFilter;
 use crate::sandbox_policy::{parse_sandbox_policy, KEY_SANDBOX_NETWORK};
 use crate::sandbox_runtime::apply_sandbox_runtime;
 use crate::secrets::resolve_config_value;
@@ -131,11 +132,25 @@ pub fn execute(server: &str) {
         );
     }
 
+    let filter = ProxyFilter::new(&installed.permissions.exec);
+    let use_filter = !filter.allows_all();
+
+    let stdin_mode = if use_filter {
+        Stdio::piped()
+    } else {
+        Stdio::inherit()
+    };
+    let stdout_mode = if use_filter {
+        Stdio::piped()
+    } else {
+        Stdio::inherit()
+    };
+
     let mut child = match Command::new(&spec.command)
         .args(&spec.args)
         .envs(&spec.env)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
+        .stdin(stdin_mode)
+        .stdout(stdout_mode)
         .stderr(Stdio::inherit())
         .spawn()
     {
@@ -155,25 +170,74 @@ pub fn execute(server: &str) {
         Some(&spec.args),
     );
 
-    let status = match child.wait() {
-        Ok(s) => s,
-        Err(e) => {
-            let _ = runtime.record_audit_event(
-                server,
-                "proxy-error",
-                Some(pid),
-                Some(&spec.command),
-                Some(&spec.args),
-            );
-            eprintln!(
-                "{} Failed while proxying {}: {}",
-                "✗".red().bold(),
-                server.cyan(),
-                e
-            );
-            process::exit(1);
+    if use_filter {
+        let child_stdin = child.stdin.take().unwrap();
+        let child_stdout = child.stdout.take().unwrap();
+
+        match crate::proxy_filter::run_filtered_proxy(child_stdin, child_stdout, &filter) {
+            Ok(denied_tools) => {
+                for tool in &denied_tools {
+                    let _ = runtime.record_audit_event(
+                        server,
+                        "tool-call-denied",
+                        Some(pid),
+                        Some(tool),
+                        Some(&spec.args),
+                    );
+                }
+            }
+            Err(e) => {
+                let _ = runtime.record_audit_event(
+                    server,
+                    "proxy-error",
+                    Some(pid),
+                    Some(&spec.command),
+                    Some(&spec.args),
+                );
+                eprintln!(
+                    "{} Proxy filter error for {}: {}",
+                    "✗".red().bold(),
+                    server.cyan(),
+                    e
+                );
+            }
         }
-    };
+
+        let _ = child.wait();
+    } else {
+        let status = match child.wait() {
+            Ok(s) => s,
+            Err(e) => {
+                let _ = runtime.record_audit_event(
+                    server,
+                    "proxy-error",
+                    Some(pid),
+                    Some(&spec.command),
+                    Some(&spec.args),
+                );
+                eprintln!(
+                    "{} Failed while proxying {}: {}",
+                    "✗".red().bold(),
+                    server.cyan(),
+                    e
+                );
+                process::exit(1);
+            }
+        };
+
+        let _ = runtime.record_audit_event(
+            server,
+            "proxy-end",
+            Some(pid),
+            Some(&spec.command),
+            Some(&spec.args),
+        );
+
+        match status.code() {
+            Some(code) => process::exit(code),
+            None => process::exit(1),
+        }
+    }
 
     let _ = runtime.record_audit_event(
         server,
@@ -182,11 +246,6 @@ pub fn execute(server: &str) {
         Some(&spec.command),
         Some(&spec.args),
     );
-
-    match status.code() {
-        Some(code) => process::exit(code),
-        None => process::exit(1),
-    }
 }
 
 /// Reads and parses an installed server config file.
