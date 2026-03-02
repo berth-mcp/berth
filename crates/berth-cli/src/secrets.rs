@@ -3,7 +3,11 @@
 
 //! Secret storage helpers for optional secure config values.
 
+use aes_gcm::aead::{Aead, OsRng};
+use aes_gcm::{AeadCore, Aes256Gcm, KeyInit};
+use base64::prelude::*;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
@@ -237,21 +241,67 @@ fn write_file_secrets_to(path: &Path, secrets: &FileSecrets) -> Result<(), Strin
     Ok(())
 }
 
+/// Derives a 256-bit encryption key from the berth home path.
+fn derive_key() -> Result<[u8; 32], String> {
+    let home = paths::berth_home().ok_or("Could not determine home directory.")?;
+    let mut hasher = Sha256::new();
+    hasher.update(home.to_string_lossy().as_bytes());
+    hasher.update(b"berth-secret-key-v1");
+    Ok(hasher.finalize().into())
+}
+
+/// Encrypts a plaintext value with AES-256-GCM.
+fn encrypt_value(plaintext: &str) -> Result<String, String> {
+    let key_bytes = derive_key()?;
+    let cipher =
+        Aes256Gcm::new_from_slice(&key_bytes).map_err(|e| format!("cipher init error: {e}"))?;
+    let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+    let ciphertext = cipher
+        .encrypt(&nonce, plaintext.as_bytes())
+        .map_err(|e| format!("encryption failed: {e}"))?;
+
+    let mut combined = nonce.to_vec();
+    combined.extend_from_slice(&ciphertext);
+    Ok(BASE64_STANDARD.encode(&combined))
+}
+
+/// Decrypts a base64-encoded encrypted value.
+fn decrypt_value(encoded: &str) -> Result<String, String> {
+    let key_bytes = derive_key()?;
+    let cipher =
+        Aes256Gcm::new_from_slice(&key_bytes).map_err(|e| format!("cipher init error: {e}"))?;
+    let combined = BASE64_STANDARD
+        .decode(encoded)
+        .map_err(|e| format!("base64 decode failed: {e}"))?;
+    if combined.len() < 12 {
+        return Err("encrypted value too short".to_string());
+    }
+    let (nonce_bytes, ciphertext) = combined.split_at(12);
+    let nonce = aes_gcm::Nonce::from_slice(nonce_bytes);
+    let plaintext = cipher
+        .decrypt(nonce, ciphertext)
+        .map_err(|e| format!("decryption failed: {e}"))?;
+    String::from_utf8(plaintext).map_err(|e| format!("decrypted value is not valid utf-8: {e}"))
+}
+
 fn store_file_secret(server: &str, key: &str, value: &str) -> Result<(), String> {
+    let encrypted = encrypt_value(value)?;
     let mut secrets = read_file_secrets()?;
-    secrets
-        .secrets
-        .insert(secret_id(server, key), value.to_string());
+    secrets.secrets.insert(secret_id(server, key), encrypted);
     write_file_secrets(&secrets)
 }
 
 fn get_file_secret(server: &str, key: &str) -> Result<String, String> {
     let secrets = read_file_secrets()?;
-    secrets
+    let stored = secrets
         .secrets
         .get(&secret_id(server, key))
-        .cloned()
-        .ok_or_else(|| format!("secret not found for {server}:{key}"))
+        .ok_or_else(|| format!("secret not found for {server}:{key}"))?;
+    // Try decrypting; fall back to raw value for backward compat with plaintext
+    match decrypt_value(stored) {
+        Ok(plaintext) => Ok(plaintext),
+        Err(_) => Ok(stored.clone()),
+    }
 }
 
 #[cfg(test)]
@@ -280,5 +330,39 @@ mod tests {
             loaded.secrets.get("github:token"),
             Some(&"secret-value".to_string())
         );
+    }
+
+    #[test]
+    fn encrypted_round_trip() {
+        let plaintext = "my-super-secret-token-123";
+        let encrypted = encrypt_value(plaintext).unwrap();
+        // Encrypted value should differ from plaintext
+        assert_ne!(encrypted, plaintext);
+        let decrypted = decrypt_value(&encrypted).unwrap();
+        assert_eq!(decrypted, plaintext);
+    }
+
+    #[test]
+    fn backward_compat_plaintext_fallback() {
+        let temp = tempfile::tempdir().unwrap();
+        let path = temp.path().join("secrets.toml");
+
+        // Write plaintext directly (pre-encryption format)
+        let mut secrets = FileSecrets::default();
+        secrets
+            .secrets
+            .insert("github:token".to_string(), "plain-secret".to_string());
+        write_file_secrets_to(&path, &secrets).unwrap();
+
+        // Reading should fall back to returning the raw value
+        let loaded = read_file_secrets_from(&path).unwrap();
+        let stored = loaded.secrets.get("github:token").unwrap();
+        match decrypt_value(stored) {
+            Ok(_) => panic!("plaintext should not decrypt as valid AES-GCM"),
+            Err(_) => {
+                // Backward compat: return raw value
+                assert_eq!(stored, "plain-secret");
+            }
+        }
     }
 }
