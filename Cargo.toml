@@ -15,5 +15,5 @@ homepage = "https://github.com/berth-mcp/berth"
 documentation = "https://berth-mcp.github.io/berth/"
 description = "The safe runtime & package manager for MCP servers"
 readme = "README.md"
-keywords = ["mcp", "cli", "model-context-protocol", "ai", "tools"]
+keywords = ["mcp", "cli", "ai", "tools", "server-manager"]
 categories = ["command-line-utilities"]
