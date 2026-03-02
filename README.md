@@ -63,9 +63,9 @@ berth list
 | Install / uninstall / update MCP servers | Working | Install, remove, and update from the registry (supports `npx`, `uvx`, and binary artifacts) |
 | Configure MCP servers | Working | Set and view server configuration |
 | Start / stop / restart MCP servers | Working | Subprocess lifecycle controls with PID/state tracking, graceful-first shutdown, and optional bounded auto-restart policy |
-| MCP server health & status | Working | Runtime status with running/stopped/error plus PID and memory where available |
+| MCP server health & status | Working | Runtime status with running/stopped/error plus PID, memory, and optional MCP protocol health probe |
 | MCP server log streaming | Working | Tail lifecycle events from persisted server logs |
-| MCP proxy mode | Working | Transparent stdio proxy execution for configured servers |
+| MCP proxy mode | Working | Transparent stdio proxy execution with optional exec-permission filtering |
 | MCP permission management | Working | Inspect declared/effective permissions, enforce env overrides at launch/link time, and block launch when network is fully revoked |
 | MCP audit trail | Working | JSONL audit events for lifecycle actions with server/time filters |
 | AI client integration | Working | Auto-configure Claude Desktop, Cursor, Windsurf, Continue, and VS Code |
@@ -92,14 +92,14 @@ berth config import <file>     Import server config values from TOML bundle
 berth start [server]           Start MCP server(s)
 berth stop [server]            Stop MCP server(s)
 berth restart <server>         Restart an MCP server
-berth status                   Show MCP server status (state, PID, memory)
+berth status [--health-check]   Show MCP server status (state, PID, memory, optional MCP health probe)
 berth logs <server>            Show recent MCP server logs
 
 berth permissions <server>     Show/manage/export MCP server permissions (--grant/--revoke/--reset/--export)
 berth policy [server]          Show/manage/validate org policy (--init/--set/--json)
 berth audit [server]           View/export runtime audit log (supports --since, --action, --json, and --export)
 berth analytics [server]       Summarize audit usage and estimated runtime cost (--since, --top, --json)
-berth link <client>            Link Berth-managed servers to claude-desktop, cursor, windsurf, continue, or vscode
+berth link <client> [--watch]   Link Berth-managed servers to claude-desktop, cursor, windsurf, continue, or vscode
 berth unlink <client>          Unlink Berth-managed servers from claude-desktop, cursor, windsurf, continue, or vscode
 berth proxy <server>           Run as transparent MCP proxy
 berth registry-api             Serve local registry REST API (supports --bind and --max-requests)
@@ -169,10 +169,18 @@ Runtime and sandbox config keys:
 - `berth.max-restarts` (positive integer, default `3`)
 - `berth.sandbox` (`basic` or `off`)
 - `berth.sandbox-network` (`inherit` or `deny-all`)
+- `berth.max-memory` (memory limit, e.g. `512M`, `1G`)
+- `berth.max-file-descriptors` (file descriptor limit, e.g. `1024`)
 
 Sandbox runtime note:
 - On Linux, `berth.sandbox=basic` applies Landlock filesystem restrictions via `landlock-restrict` when available and also applies `setpriv --no-new-privs` hardening when available.
 - On macOS, `berth.sandbox=basic` uses `sandbox-exec` with a generated profile (default-deny baseline, declared write-path allowances).
+- On Windows, `berth.sandbox=basic` uses Job Objects for process isolation.
+
+Global configuration (`~/.berth/berth.toml`):
+- Provides workspace-wide defaults for runtime settings (auto-restart, max-restarts, sandbox)
+- Per-server config overrides global defaults
+- Missing file or missing keys silently fall back to built-in defaults
 
 Org policy file (optional):
 - Path: `~/.berth/policy.toml`
@@ -187,7 +195,7 @@ Org policy file (optional):
   - `deny_exec_wildcard = true`
 
 Registry source overrides (optional):
-- `BERTH_REGISTRY_INDEX_URL` fetch registry JSON via `curl`/`wget` and use it for lookups.
+- `BERTH_REGISTRY_INDEX_URL` fetch registry JSON via HTTP and use it for lookups.
 - `BERTH_REGISTRY_INDEX_FILE` load registry JSON from a local file path.
 - `BERTH_REGISTRY_CACHE` cache path for downloaded/overridden registry JSON.
 

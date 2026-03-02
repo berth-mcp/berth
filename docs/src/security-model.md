@@ -38,8 +38,10 @@ berth audit github --export audit.jsonl
 - undeclared network grants emit a warning and audit event (`permission-network-warning`)
 - org policy denials are enforced at launch/restart/proxy, status-triggered recovery, and background supervisor auto-restart paths, and are recorded as `policy-denied` for launch/proxy/auto-restart denials
 - client linking skips servers denied by org policy and prints a warning
-- `berth.sandbox=basic` uses backend hardening (`landlock-restrict` + `setpriv` on Linux when available, generated `sandbox-exec` profile on macOS)
-- `berth config <server> --set key=value --secure` stores sensitive values in keyring backend (or file backend in test mode)
+- `berth.sandbox=basic` uses backend hardening (`landlock-restrict` + `setpriv` on Linux when available, generated `sandbox-exec` profile on macOS, Job Objects on Windows)
+- `berth config <server> --set key=value --secure` stores sensitive values in OS keyring (macOS Keychain / Linux secret-tool) or AES-256-GCM encrypted file backend
+- proxy sessions enforce exec-permission filtering — tool calls not in the allowed set receive a JSON-RPC error and a `tool-call-denied` audit event is recorded
+- resource limits (`berth.max-memory`, `berth.max-file-descriptors`) are enforced via `setrlimit` on Unix
 - audit data is stored as JSONL for deterministic parsing
 
 Org policy file (`~/.berth/policy.toml`) supports:

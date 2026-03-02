@@ -29,7 +29,7 @@ Runtime commands:
 berth start [server]
 berth stop [server]
 berth restart <server>
-berth status
+berth status [--health-check]
 berth logs <server>
 berth proxy <server>
 ```
@@ -100,7 +100,7 @@ Registry API endpoints:
 Client integration:
 
 ```text
-berth link <client>
+berth link <client> [--watch]
 berth unlink <client>
 ```
 
