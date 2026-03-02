@@ -6,3 +6,11 @@ title = "Berth Documentation"
 
 [build]
 build-dir = "book"
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+additional-css = ["theme/custom.css"]
+git-repository-url = "https://github.com/berth-mcp/berth"
+git-repository-icon = "fa-github"
+edit-url-template = "https://github.com/berth-mcp/berth/edit/main/docs/{path}"
