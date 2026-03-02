@@ -3644,3 +3644,54 @@ fn update_all_mixed_results_exits_1_and_reports_summary() {
     assert!(stdout.contains("failed"));
     assert!(stderr.contains("not found in the registry"));
 }
+
+#[test]
+fn global_config_auto_restart_default_applies() {
+    let tmp = tempfile::tempdir().unwrap();
+    berth_with_home(tmp.path())
+        .args(["install", "github"])
+        .output()
+        .unwrap();
+    berth_with_home(tmp.path())
+        .args(["config", "github", "--set", "token=abc123"])
+        .output()
+        .unwrap();
+
+    // Write global config with auto_restart enabled
+    let berth_home = tmp.path().join(".berth");
+    std::fs::create_dir_all(&berth_home).unwrap();
+    std::fs::write(
+        berth_home.join("berth.toml"),
+        "[runtime]\nauto_restart = true\n",
+    )
+    .unwrap();
+
+    patch_runtime_to_fail_once_then_run(tmp.path(), "github");
+
+    let start = berth_with_home(tmp.path())
+        .args(["start", "github"])
+        .output()
+        .unwrap();
+    assert!(start.status.success());
+
+    // Auto-restart should activate from global config default
+    let mut saw_restart = false;
+    for _ in 0..80 {
+        let audit = berth_with_home(tmp.path())
+            .args(["audit", "github", "--action", "auto-restart"])
+            .output()
+            .unwrap();
+        if audit.status.success() && String::from_utf8_lossy(&audit.stdout).contains("auto-restart")
+        {
+            saw_restart = true;
+            break;
+        }
+        thread::sleep(Duration::from_millis(50));
+    }
+    assert!(saw_restart);
+
+    berth_with_home(tmp.path())
+        .args(["stop", "github"])
+        .output()
+        .unwrap();
+}

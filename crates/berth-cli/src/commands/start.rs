@@ -14,6 +14,7 @@ use berth_registry::Registry;
 use berth_runtime::{ProcessSpec, RuntimeManager, StartOutcome};
 
 use crate::commands::supervise;
+use crate::global_config;
 use crate::paths;
 use crate::permission_filter::{
     filter_env_map, load_permission_overrides, undeclared_network_grants,
@@ -22,7 +23,7 @@ use crate::permission_filter::{
 use crate::policy_engine::{
     enforce_global_policy, load_global_policy, GlobalPolicy, POLICY_DENIED_PREFIX,
 };
-use crate::runtime_policy::parse_runtime_policy;
+use crate::runtime_policy::{self, parse_runtime_policy};
 use crate::sandbox_policy::{parse_sandbox_policy, KEY_SANDBOX_NETWORK};
 use crate::sandbox_runtime::apply_sandbox_runtime;
 use crate::secrets::resolve_config_value;
@@ -336,7 +337,17 @@ fn build_process_spec(
         ));
     }
     filter_env_map(&mut env, &installed.permissions.env, &overrides);
-    let policy = parse_runtime_policy(&installed.config)?;
+    let mut policy = parse_runtime_policy(&installed.config)?;
+    // Apply global config default when auto-restart is not set per-server
+    if !installed
+        .config
+        .contains_key(runtime_policy::KEY_AUTO_RESTART)
+    {
+        let global_cfg = global_config::load();
+        if global_cfg.runtime.auto_restart {
+            policy.enabled = true;
+        }
+    }
     let (command, args) = apply_sandbox_runtime(
         &installed.runtime.command,
         &installed.runtime.args,

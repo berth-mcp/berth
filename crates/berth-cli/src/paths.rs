@@ -39,6 +39,11 @@ pub fn audit_log_path() -> Option<PathBuf> {
     berth_home().map(|h| h.join("audit").join("audit.jsonl"))
 }
 
+/// Returns the global configuration file path (`~/.berth/berth.toml`).
+pub fn global_config_path() -> Option<PathBuf> {
+    berth_home().map(|h| h.join("berth.toml"))
+}
+
 /// Returns the global org-policy file path.
 pub fn policy_path() -> Option<PathBuf> {
     berth_home().map(|h| h.join("policy.toml"))
