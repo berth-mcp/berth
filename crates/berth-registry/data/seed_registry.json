@@ -1309,5 +1309,437 @@
     "tags": ["prisma", "orm", "database", "schema"],
     "maintainer": "Community",
     "trustLevel": "community"
+  },
+  {
+    "name": "git",
+    "displayName": "Git MCP Server",
+    "description": "Read, search, and manipulate local Git repositories",
+    "version": "0.6.2",
+    "source": {
+      "type": "pypi",
+      "package": "mcp-server-git",
+      "repository": "https://github.com/modelcontextprotocol/servers"
+    },
+    "runtime": {
+      "type": "python",
+      "command": "uvx",
+      "args": ["mcp-server-git"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": [],
+      "env": [],
+      "filesystem": ["read:/workspace"],
+      "exec": ["git"]
+    },
+    "config": {
+      "required": [
+        { "key": "repository", "description": "Path to the Git repository to operate on", "sensitive": false }
+      ],
+      "optional": []
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 12450
+    },
+    "category": "developer-tools",
+    "tags": ["git", "version-control", "repository", "diff", "commit"],
+    "maintainer": "Anthropic",
+    "trustLevel": "official"
+  },
+  {
+    "name": "time",
+    "displayName": "Time MCP Server",
+    "description": "Get current time and convert between timezones",
+    "version": "0.6.2",
+    "source": {
+      "type": "pypi",
+      "package": "mcp-server-time",
+      "repository": "https://github.com/modelcontextprotocol/servers"
+    },
+    "runtime": {
+      "type": "python",
+      "command": "uvx",
+      "args": ["mcp-server-time"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": [],
+      "env": [],
+      "filesystem": [],
+      "exec": []
+    },
+    "config": {
+      "required": [],
+      "optional": [
+        { "key": "local-timezone", "description": "IANA timezone name for local time", "default": null }
+      ]
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 8920
+    },
+    "category": "developer-tools",
+    "tags": ["time", "timezone", "clock", "conversion"],
+    "maintainer": "Anthropic",
+    "trustLevel": "official"
+  },
+  {
+    "name": "playwright",
+    "displayName": "Playwright MCP Server",
+    "description": "Browser automation via structured accessibility snapshots",
+    "version": "0.1.5",
+    "source": {
+      "type": "npm",
+      "package": "@playwright/mcp",
+      "repository": "https://github.com/microsoft/playwright-mcp"
+    },
+    "runtime": {
+      "type": "node",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": ["*:443", "*:80"],
+      "env": [],
+      "filesystem": [],
+      "exec": []
+    },
+    "config": {
+      "required": [],
+      "optional": [
+        { "key": "headless", "description": "Run browser in headless mode", "default": "true" }
+      ]
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 38700
+    },
+    "category": "developer-tools",
+    "tags": ["browser", "automation", "testing", "web", "playwright"],
+    "maintainer": "Microsoft",
+    "trustLevel": "community"
+  },
+  {
+    "name": "context7",
+    "displayName": "Context7 MCP Server",
+    "description": "Up-to-date library documentation for AI code editors",
+    "version": "2.1.2",
+    "source": {
+      "type": "npm",
+      "package": "@upstash/context7-mcp",
+      "repository": "https://github.com/upstash/context7"
+    },
+    "runtime": {
+      "type": "node",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": ["api.context7.com:443"],
+      "env": [],
+      "filesystem": [],
+      "exec": []
+    },
+    "config": {
+      "required": [],
+      "optional": []
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 42100
+    },
+    "category": "developer-tools",
+    "tags": ["documentation", "context", "library", "code-editor"],
+    "maintainer": "Upstash",
+    "trustLevel": "community"
+  },
+  {
+    "name": "exa",
+    "displayName": "Exa MCP Server",
+    "description": "AI-native web search and content retrieval via Exa",
+    "version": "1.2.0",
+    "source": {
+      "type": "npm",
+      "package": "exa-mcp-server",
+      "repository": "https://github.com/exa-labs/exa-mcp-server"
+    },
+    "runtime": {
+      "type": "node",
+      "command": "npx",
+      "args": ["-y", "exa-mcp-server"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": ["api.exa.ai:443"],
+      "env": ["EXA_API_KEY"],
+      "filesystem": [],
+      "exec": []
+    },
+    "config": {
+      "required": [
+        { "key": "api-key", "env": "EXA_API_KEY", "description": "Exa API key", "sensitive": true }
+      ],
+      "optional": []
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 15800
+    },
+    "category": "search",
+    "tags": ["search", "web", "ai", "semantic-search"],
+    "maintainer": "Exa Labs",
+    "trustLevel": "community"
+  },
+  {
+    "name": "cloudflare",
+    "displayName": "Cloudflare MCP Server",
+    "description": "Manage Cloudflare Workers, KV, R2, D1, and DNS resources",
+    "version": "0.3.1",
+    "source": {
+      "type": "npm",
+      "package": "@cloudflare/mcp-server-cloudflare",
+      "repository": "https://github.com/cloudflare/mcp-server-cloudflare"
+    },
+    "runtime": {
+      "type": "node",
+      "command": "npx",
+      "args": ["-y", "@cloudflare/mcp-server-cloudflare"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": ["api.cloudflare.com:443"],
+      "env": ["CLOUDFLARE_API_TOKEN"],
+      "filesystem": [],
+      "exec": []
+    },
+    "config": {
+      "required": [
+        { "key": "api-token", "env": "CLOUDFLARE_API_TOKEN", "description": "Cloudflare API token", "sensitive": true }
+      ],
+      "optional": [
+        { "key": "account-id", "description": "Cloudflare account ID", "default": null }
+      ]
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 11200
+    },
+    "category": "developer-tools",
+    "tags": ["cloudflare", "workers", "edge", "dns", "cloud"],
+    "maintainer": "Cloudflare",
+    "trustLevel": "community"
+  },
+  {
+    "name": "atlassian",
+    "displayName": "Atlassian MCP Server",
+    "description": "Interact with Jira issues and Confluence pages",
+    "version": "1.0.0",
+    "source": {
+      "type": "npm",
+      "package": "@modelcontextprotocol/server-atlassian",
+      "repository": "https://github.com/atlassian/atlassian-mcp-server"
+    },
+    "runtime": {
+      "type": "node",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-atlassian"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": ["*.atlassian.net:443"],
+      "env": ["ATLASSIAN_TOKEN", "ATLASSIAN_EMAIL", "ATLASSIAN_SITE_URL"],
+      "filesystem": [],
+      "exec": []
+    },
+    "config": {
+      "required": [
+        { "key": "site-url", "env": "ATLASSIAN_SITE_URL", "description": "Atlassian site URL (e.g. https://yoursite.atlassian.net)", "sensitive": false },
+        { "key": "email", "env": "ATLASSIAN_EMAIL", "description": "Atlassian account email", "sensitive": false },
+        { "key": "token", "env": "ATLASSIAN_TOKEN", "description": "Atlassian API token", "sensitive": true }
+      ],
+      "optional": []
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 9800
+    },
+    "category": "productivity",
+    "tags": ["atlassian", "jira", "confluence", "project-management"],
+    "maintainer": "Atlassian",
+    "trustLevel": "community"
+  },
+  {
+    "name": "azure",
+    "displayName": "Azure MCP Server",
+    "description": "Access Azure resources and developer tools via Azure SDK",
+    "version": "0.6.0",
+    "source": {
+      "type": "npm",
+      "package": "@azure/mcp",
+      "repository": "https://github.com/Azure/azure-mcp"
+    },
+    "runtime": {
+      "type": "node",
+      "command": "npx",
+      "args": ["-y", "@azure/mcp@latest", "server", "start"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": ["management.azure.com:443", "login.microsoftonline.com:443"],
+      "env": ["AZURE_SUBSCRIPTION_ID"],
+      "filesystem": [],
+      "exec": []
+    },
+    "config": {
+      "required": [],
+      "optional": [
+        { "key": "subscription-id", "env": "AZURE_SUBSCRIPTION_ID", "description": "Azure subscription ID", "default": null }
+      ]
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 7600
+    },
+    "category": "developer-tools",
+    "tags": ["azure", "cloud", "microsoft", "infrastructure"],
+    "maintainer": "Microsoft",
+    "trustLevel": "community"
+  },
+  {
+    "name": "firecrawl",
+    "displayName": "Firecrawl MCP Server",
+    "description": "Web scraping, crawling, and structured data extraction",
+    "version": "1.5.0",
+    "source": {
+      "type": "npm",
+      "package": "firecrawl-mcp",
+      "repository": "https://github.com/firecrawl/firecrawl-mcp-server"
+    },
+    "runtime": {
+      "type": "node",
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": ["*:443", "*:80"],
+      "env": ["FIRECRAWL_API_KEY"],
+      "filesystem": [],
+      "exec": []
+    },
+    "config": {
+      "required": [
+        { "key": "api-key", "env": "FIRECRAWL_API_KEY", "description": "Firecrawl API key", "sensitive": true }
+      ],
+      "optional": []
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 14300
+    },
+    "category": "search",
+    "tags": ["web-scraping", "crawling", "extraction", "data"],
+    "maintainer": "Firecrawl",
+    "trustLevel": "community"
+  },
+  {
+    "name": "e2b",
+    "displayName": "E2B MCP Server",
+    "description": "Execute code in secure cloud sandboxes",
+    "version": "0.2.3",
+    "source": {
+      "type": "npm",
+      "package": "@e2b/mcp-server",
+      "repository": "https://github.com/e2b-dev/mcp-server"
+    },
+    "runtime": {
+      "type": "node",
+      "command": "npx",
+      "args": ["-y", "@e2b/mcp-server"]
+    },
+    "transport": "stdio",
+    "permissions": {
+      "network": ["api.e2b.dev:443"],
+      "env": ["E2B_API_KEY"],
+      "filesystem": [],
+      "exec": []
+    },
+    "config": {
+      "required": [
+        { "key": "api-key", "env": "E2B_API_KEY", "description": "E2B API key", "sensitive": true }
+      ],
+      "optional": []
+    },
+    "compatibility": {
+      "clients": ["claude-desktop", "cursor", "windsurf", "continue", "vscode", "generic"],
+      "platforms": ["macos", "linux", "windows"]
+    },
+    "quality": {
+      "securityScan": "pass",
+      "healthCheck": true,
+      "lastVerified": "2026-03-03",
+      "downloads": 6700
+    },
+    "category": "developer-tools",
+    "tags": ["sandbox", "code-execution", "cloud", "security"],
+    "maintainer": "E2B",
+    "trustLevel": "community"
   }
 ]

@@ -19,7 +19,7 @@ mod tests {
     #[test]
     fn seed_registry_parses() {
         let servers = load_seed_registry();
-        assert_eq!(servers.len(), 30);
+        assert_eq!(servers.len(), 40);
     }
 
     #[test]
@@ -56,5 +56,15 @@ mod tests {
         assert!(names.contains(&"vercel"));
         assert!(names.contains(&"supabase"));
         assert!(names.contains(&"prisma"));
+        assert!(names.contains(&"git"));
+        assert!(names.contains(&"time"));
+        assert!(names.contains(&"playwright"));
+        assert!(names.contains(&"context7"));
+        assert!(names.contains(&"exa"));
+        assert!(names.contains(&"cloudflare"));
+        assert!(names.contains(&"atlassian"));
+        assert!(names.contains(&"azure"));
+        assert!(names.contains(&"firecrawl"));
+        assert!(names.contains(&"e2b"));
     }
 }

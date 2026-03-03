@@ -264,6 +264,16 @@ Berth ships with a built-in registry of popular MCP servers:
 | `vercel` | Inspect projects, deployments, and logs on Vercel | Developer Tools |
 | `supabase` | Access Supabase database, auth, and storage resources | Databases |
 | `prisma` | Inspect Prisma schema and query connected databases | Developer Tools |
+| `git` | Read, search, and manipulate local Git repositories | Developer Tools |
+| `time` | Get current time and convert between timezones | Developer Tools |
+| `playwright` | Browser automation via structured accessibility snapshots | Developer Tools |
+| `context7` | Up-to-date library documentation for AI code editors | Developer Tools |
+| `exa` | AI-native web search and content retrieval via Exa | Search |
+| `cloudflare` | Manage Cloudflare Workers, KV, R2, D1, and DNS resources | Developer Tools |
+| `atlassian` | Interact with Jira issues and Confluence pages | Productivity |
+| `azure` | Access Azure resources and developer tools via Azure SDK | Developer Tools |
+| `firecrawl` | Web scraping, crawling, and structured data extraction | Search |
+| `e2b` | Execute code in secure cloud sandboxes | Developer Tools |
 
 More MCP servers will be added as the registry grows.
 
