@@ -17,7 +17,8 @@
   },
   "files": [
     "bin/berth.js",
-    "install.js"
+    "install.js",
+    "README.md"
   ],
   "os": ["linux", "darwin", "win32"],
   "engines": {
