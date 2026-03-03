@@ -48,6 +48,10 @@ curl -fsSL https://raw.githubusercontent.com/berth-mcp/berth/main/install.sh | s
 brew install --HEAD ./Formula/berth.rb
 ```
 
+> **Note:** If you installed via `cargo install`, make sure `~/.cargo/bin` is in your `PATH`.
+> You can add it by appending `export PATH="$HOME/.cargo/bin:$PATH"` to your shell profile
+> (`~/.bashrc`, `~/.zshrc`, etc.), then restarting your terminal.
+
 ## Quick Start
 
 ```bash
